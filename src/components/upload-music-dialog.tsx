@@ -32,6 +32,9 @@ const songSchema = z.object({
   artist: z.string().min(1, 'Artist is required'),
   genre: z.string().optional(),
   mood: z.string().optional(),
+  file: z
+    .any()
+    .refine((files) => files?.length == 1, 'File is required.'),
 });
 
 const uploadFormSchema = z.object({
@@ -66,7 +69,9 @@ export function UploadMusicDialog() {
   
   React.useEffect(() => {
     if (!open) {
-      form.reset();
+      form.reset({
+        songs: [{ title: '', artist: '', genre: '', mood: '' }],
+      });
     }
   }, [open, form]);
 
@@ -91,6 +96,23 @@ export function UploadMusicDialog() {
               {fields.map((field, index) => (
                 <div key={field.id} className="space-y-4 rounded-lg border p-4 relative">
                   <h4 className="font-medium text-lg">Song #{index + 1}</h4>
+                   <FormField
+                      control={form.control}
+                      name={`songs.${index}.file`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Music File</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="file" 
+                              accept="audio/*"
+                              onChange={(e) => field.onChange(e.target.files)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                    <div className="grid grid-cols-2 gap-4">
                      <FormField
                         control={form.control}
