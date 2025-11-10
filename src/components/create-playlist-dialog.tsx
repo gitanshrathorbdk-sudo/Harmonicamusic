@@ -37,6 +37,8 @@ import { generatePlaylist } from '@/app/actions';
 import { GeneratePlaylistFromMoodOutput } from '@/ai/flows/generate-playlist-from-mood';
 import { Wand2, Pencil, Loader2, ListMusic, ChevronLeft, Music } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
+import type { Playlist, Song } from '@/lib/types';
+import { ScrollArea } from './ui/scroll-area';
 
 const playlistFormSchema = z.object({
   mood: z.string().min(2, {
@@ -45,21 +47,19 @@ const playlistFormSchema = z.object({
   numberOfSongs: z.number().min(5).max(20),
 });
 
-const dummySongs = [
-  { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen' },
-  { id: '2', title: 'Stairway to Heaven', artist: 'Led Zeppelin' },
-  { id: '3', title: 'Hotel California', artist: 'Eagles' },
-  { id: '4', title: 'Smells Like Teen Spirit', artist: 'Nirvana' },
-  { id: '5', title: 'Imagine', artist: 'John Lennon' },
-  { id: '6', title: 'Like a Rolling Stone', artist: 'Bob Dylan' },
-];
+type CreatePlaylistDialogProps = {
+    onPlaylistCreated: (playlist: Playlist) => void;
+    songs: Song[];
+};
 
-export function CreatePlaylistDialog() {
+export function CreatePlaylistDialog({ onPlaylistCreated, songs }: CreatePlaylistDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [view, setView] = React.useState<'options' | 'ai' | 'manual'>('options');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [playlist, setPlaylist] =
+  const [generatedPlaylist, setGeneratedPlaylist] =
     React.useState<GeneratePlaylistFromMoodOutput | null>(null);
+  const [playlistName, setPlaylistName] = React.useState('');
+  const [selectedSongs, setSelectedSongs] = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof playlistFormSchema>>({
@@ -70,14 +70,15 @@ export function CreatePlaylistDialog() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof playlistFormSchema>) {
+  async function onAiSubmit(values: z.infer<typeof playlistFormSchema>) {
     setIsLoading(true);
-    setPlaylist(null);
+    setGeneratedPlaylist(null);
     const result = await generatePlaylist(values);
     setIsLoading(false);
 
     if (result.success && result.data) {
-      setPlaylist(result.data);
+      setGeneratedPlaylist(result.data);
+      setPlaylistName(`AI Playlist: ${values.mood}`);
       toast({
         title: 'Playlist Generated!',
         description: 'Your AI-powered playlist is ready.',
@@ -91,16 +92,57 @@ export function CreatePlaylistDialog() {
     }
   }
 
+  const handleSavePlaylist = (type: 'ai' | 'manual') => {
+    let playlist: Playlist | null = null;
+    if (type === 'ai' && generatedPlaylist) {
+        playlist = {
+            name: playlistName || `AI Playlist: ${form.getValues('mood')}`,
+            songs: generatedPlaylist.playlist,
+            type: 'ai'
+        };
+    } else if (type === 'manual') {
+        if (!playlistName) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Playlist name is required.' });
+            return;
+        }
+        const songsForPlaylist = songs.filter(s => selectedSongs.has(s.fileUrl));
+         if (songsForPlaylist.length === 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Select at least one song.' });
+            return;
+        }
+        playlist = { name: playlistName, songs: songsForPlaylist, type: 'manual' };
+    }
+
+    if (playlist) {
+        onPlaylistCreated(playlist);
+        toast({ title: 'Playlist Saved', description: `"${playlist.name}" has been saved.` });
+        handleOpenChange(false);
+    }
+  };
+
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
       setTimeout(() => {
         setView('options');
-        setPlaylist(null);
+        setGeneratedPlaylist(null);
+        setPlaylistName('');
+        setSelectedSongs(new Set());
         form.reset();
       }, 300);
     }
   };
+  
+  const handleSongSelection = (songFileUrl: string) => {
+    const newSelection = new Set(selectedSongs);
+    if (newSelection.has(songFileUrl)) {
+        newSelection.delete(songFileUrl);
+    } else {
+        newSelection.add(songFileUrl);
+    }
+    setSelectedSongs(newSelection);
+  };
+
 
   const renderContent = () => {
     switch (view) {
@@ -116,9 +158,9 @@ export function CreatePlaylistDialog() {
                 Describe the mood and let AI create a playlist for you.
               </DialogDescription>
             </DialogHeader>
-            {!playlist && (
+            {!generatedPlaylist && (
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onAiSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
                     name="mood"
@@ -165,9 +207,10 @@ export function CreatePlaylistDialog() {
                 </form>
               </Form>
             )}
-            {playlist && (
-              <div className="max-h-[50vh] overflow-y-auto">
-                <h3 className="mb-2 text-lg font-semibold">Your "{form.getValues('mood')}" Playlist</h3>
+            {generatedPlaylist && (
+              <div className="space-y-4">
+                <Input value={playlistName} onChange={(e) => setPlaylistName(e.target.value)} placeholder="Playlist Name" />
+                <ScrollArea className="max-h-[40vh] h-full">
                  <Table>
                     <TableHeader>
                       <TableRow>
@@ -177,7 +220,7 @@ export function CreatePlaylistDialog() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {playlist.playlist.map((song, index) => (
+                      {generatedPlaylist.playlist.map((song, index) => (
                         <TableRow key={index}>
                           <TableCell>{song.title}</TableCell>
                           <TableCell>{song.artist}</TableCell>
@@ -186,6 +229,10 @@ export function CreatePlaylistDialog() {
                       ))}
                     </TableBody>
                   </Table>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button onClick={() => handleSavePlaylist('ai')}>Save Playlist</Button>
+                </DialogFooter>
               </div>
             )}
           </>
@@ -203,11 +250,12 @@ export function CreatePlaylistDialog() {
               </DialogDescription>
             </DialogHeader>
              <div className="space-y-2">
-                <Input placeholder="Playlist Name" />
+                <Input placeholder="Playlist Name" value={playlistName} onChange={e => setPlaylistName(e.target.value)}/>
               </div>
-            <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-2">
-              {dummySongs.map(song => (
-                <div key={song.id} className="flex items-center justify-between rounded-md p-2 hover:bg-accent/50">
+            <ScrollArea className="max-h-[40vh] h-full pr-2">
+              <div className='space-y-2'>
+              {songs.length > 0 ? songs.map(song => (
+                <div key={song.fileUrl} className="flex items-center justify-between rounded-md p-2 hover:bg-accent/50 cursor-pointer" onClick={() => handleSongSelection(song.fileUrl)}>
                     <div className="flex items-center gap-3">
                         <Music className="h-5 w-5 text-muted-foreground" />
                         <div>
@@ -215,12 +263,15 @@ export function CreatePlaylistDialog() {
                             <p className="text-sm text-muted-foreground">{song.artist}</p>
                         </div>
                     </div>
-                    <Checkbox id={`song-${song.id}`} />
+                    <Checkbox id={`song-${song.fileUrl}`} checked={selectedSongs.has(song.fileUrl)} onCheckedChange={() => handleSongSelection(song.fileUrl)} />
                 </div>
-              ))}
-            </div>
+              )) : (
+                <p className='text-center text-muted-foreground py-8'>You have no songs in your library.</p>
+              )}
+              </div>
+            </ScrollArea>
              <DialogFooter>
-                <Button>Save Playlist</Button>
+                <Button onClick={() => handleSavePlaylist('manual')}>Save Playlist</Button>
             </DialogFooter>
           </>
         );
@@ -267,7 +318,7 @@ export function CreatePlaylistDialog() {
       <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-2xl">
         {view !== 'options' && (
            <Button variant="ghost" size="sm" className="absolute left-4 top-4" onClick={() => {
-             setPlaylist(null);
+             setGeneratedPlaylist(null);
              setView('options');
            }}>
              <ChevronLeft className="h-4 w-4" />

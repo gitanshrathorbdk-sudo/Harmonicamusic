@@ -5,11 +5,12 @@ import { Header } from '@/components/header';
 import { MusicControlBar } from '@/components/music-control-bar';
 import { YourMusic } from '@/components/your-music';
 import { DashboardStats } from '@/components/dashboard-stats';
-import type { Song } from '@/lib/types';
+import type { Song, Playlist } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
+  const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
@@ -31,6 +32,10 @@ export default function Home() {
     if (!currentSong && allSongs.length > 0) {
       setCurrentSong(allSongs[0]);
     }
+  };
+  
+  const handlePlaylistCreated = (newPlaylist: Playlist) => {
+    setPlaylists(prev => [...prev, newPlaylist]);
   };
 
   const handlePlaySong = (song: Song) => {
@@ -78,7 +83,7 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} />
-          <DashboardStats />
+          <DashboardStats playlists={playlists} onPlaylistCreated={handlePlaylistCreated} songs={songs} />
         </div>
       </main>
       <MusicControlBar 

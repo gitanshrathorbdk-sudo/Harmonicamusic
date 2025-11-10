@@ -1,16 +1,27 @@
+
+'use client'
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ListMusic, Music, Clock, Smile, Wand2 } from 'lucide-react';
+import { ListMusic, Music, Clock, Smile } from 'lucide-react';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
+import type { Playlist, Song } from '@/lib/types';
+import * as React from 'react';
+import { YourPlaylistsDialog } from './your-playlists-dialog';
 
-export function DashboardStats() {
+type DashboardStatsProps = {
+    playlists: Playlist[];
+    onPlaylistCreated: (playlist: Playlist) => void;
+    songs: Song[];
+};
+
+export function DashboardStats({ playlists, onPlaylistCreated, songs }: DashboardStatsProps) {
+  const [isPlaylistsDialogOpen, setPlaylistsDialogOpen] = React.useState(false);
   const stats = [
     {
       title: 'Most Listened',
@@ -20,9 +31,10 @@ export function DashboardStats() {
     },
     {
       title: 'Your Playlists',
-      value: '12',
-      icon: <ListMusic className="h-6 w-6 text-primary" />,
+      value: playlists.length.toString(),
+      icon: <ListMusic className="h-6 w-6 text-primary" /> ,
       description: 'Total playlists created',
+      action: () => setPlaylistsDialogOpen(true),
     },
     {
       title: 'Time Listened',
@@ -39,11 +51,12 @@ export function DashboardStats() {
   ];
 
   return (
+    <>
     <section className="space-y-6">
        <h2 className="text-3xl font-bold tracking-tight">Your Dashboard</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title}>
+          <Card key={stat.title} onClick={stat.action} className={stat.action ? 'cursor-pointer hover:bg-accent/50' : ''}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
               {stat.icon}
@@ -56,8 +69,10 @@ export function DashboardStats() {
         ))}
       </div>
       <div className="flex justify-center pt-4">
-        <CreatePlaylistDialog />
+        <CreatePlaylistDialog onPlaylistCreated={onPlaylistCreated} songs={songs} />
       </div>
     </section>
+    <YourPlaylistsDialog open={isPlaylistsDialogOpen} onOpenChange={setPlaylistsDialogOpen} playlists={playlists} />
+    </>
   );
 }
