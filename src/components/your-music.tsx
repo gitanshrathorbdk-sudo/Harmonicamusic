@@ -1,7 +1,7 @@
 'use client';
 
-import { Music, Upload } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Music, Play, Upload } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import type { Song } from '@/lib/types';
@@ -10,9 +10,10 @@ import { UploadMusicDialog } from './upload-music-dialog';
 
 interface YourMusicProps {
   songs: Song[];
+  onPlaySong: (song: Song) => void;
 }
 
-export function YourMusic({ songs }: YourMusicProps) {
+export function YourMusic({ songs, onPlaySong }: YourMusicProps) {
     const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
 
     const handleSongsAdded = (newSongs: Song[]) => {
@@ -29,6 +30,7 @@ export function YourMusic({ songs }: YourMusicProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className='w-12'></TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead className="hidden md:table-cell">Artist</TableHead>
                   <TableHead className="hidden lg:table-cell">Genre</TableHead>
@@ -37,7 +39,17 @@ export function YourMusic({ songs }: YourMusicProps) {
               </TableHeader>
               <TableBody>
                 {songs.map((song, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} className="group">
+                    <TableCell>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => onPlaySong(song)}
+                        >
+                            <Play className="h-5 w-5 fill-current" />
+                        </Button>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Music className="h-5 w-5 text-muted-foreground" />
