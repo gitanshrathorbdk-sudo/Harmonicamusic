@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Playlist } from '@/lib/types';
-import { ListMusic, User, Wand2 } from 'lucide-react';
+import { ListMusic, User } from 'lucide-react';
 
 type YourPlaylistsDialogProps = {
   open: boolean;
@@ -25,7 +25,7 @@ export function YourPlaylistsDialog({ open, onOpenChange, playlists }: YourPlayl
         <DialogHeader>
           <DialogTitle>Your Playlists</DialogTitle>
           <DialogDescription>
-            All the playlists you've created or generated.
+            All the playlists you've created.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] h-full pr-4">
@@ -39,9 +39,9 @@ export function YourPlaylistsDialog({ open, onOpenChange, playlists }: YourPlayl
                             <p className="text-sm text-muted-foreground">{playlist.songs.length} songs</p>
                         </div>
                     </div>
-                    <Badge variant={playlist.type === 'ai' ? 'default' : 'secondary'}>
-                        {playlist.type === 'ai' ? <Wand2 className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />}
-                        {playlist.type === 'ai' ? 'Made by AI' : 'Made by You'}
+                    <Badge variant={'secondary'}>
+                        <User className="mr-1 h-3 w-3" />
+                        Made by You
                     </Badge>
                 </div>
             )) : (
