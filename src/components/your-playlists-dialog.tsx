@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Playlist } from '@/lib/types';
-import { ListMusic, User } from 'lucide-react';
+import { ListMusic, User, BrainCircuit } from 'lucide-react';
 
 type YourPlaylistsDialogProps = {
   open: boolean;

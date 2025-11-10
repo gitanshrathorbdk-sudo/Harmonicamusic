@@ -8,6 +8,6 @@ export type Song = {
 
 export type Playlist = {
   name: string;
-  songs: (Song | { title: string, artist: string, genre: string, mood: string, characteristics?: string[] })[];
-  type: 'ai' | 'manual';
+  songs: Song[];
+  type: 'manual';
 };

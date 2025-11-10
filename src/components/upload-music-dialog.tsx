@@ -31,7 +31,6 @@ import { Textarea } from './ui/textarea';
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   artist: z.string().min(1, 'Artist is required'),
-  characteristics: z.string().optional().default(''),
   file: z
     .any()
     .refine((files) => files?.length == 1, 'File is required.'),
@@ -69,7 +68,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     const newSongs: Song[] = values.songs.map(s => ({
         title: s.title,
         artist: s.artist,
-        characteristics: s.characteristics?.split(',').map(c => c.trim()).filter(Boolean) || [],
+        characteristics: [],
         fileUrl: URL.createObjectURL(s.file[0]),
     }));
 
@@ -150,21 +149,6 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                         )}
                       />
                    </div>
-                   <FormField
-                      control={form.control}
-                      name={`songs.${index}.characteristics`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Characteristics (comma-separated)
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="e.g. Upbeat, Synth, 80s" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                    {fields.length > 1 && (
                      <Button
                        type="button"

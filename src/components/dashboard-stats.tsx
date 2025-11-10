@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ListMusic, Music, Clock, Smile } from 'lucide-react';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
 import type { Playlist, Song } from '@/lib/types';
