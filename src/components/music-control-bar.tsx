@@ -15,25 +15,76 @@ interface MusicControlBarProps {
 
 export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicControlBarProps) {
   const [progress, setProgress] = React.useState(0);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const [duration, setDuration] = React.useState(0);
+  const [currentTime, setCurrentTime] = React.useState(0);
 
   // This effect simulates song progress
   React.useEffect(() => {
-    let interval: NodeJS.Timeout;
+    const audio = audioRef.current;
+    if (!audio) return;
+  
     if (isPlaying) {
-      interval = setInterval(() => {
-        setProgress(prev => (prev >= 100 ? 0 : prev + 1));
-      }, 800);
+      audio.play().catch(e => console.error("Playback failed", e));
+    } else {
+      audio.pause();
     }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, song]);
 
   React.useEffect(() => {
-    // Reset progress when song changes
-    setProgress(0);
+    const audio = audioRef.current;
+    if (audio) {
+      // Reset progress when song changes
+      setCurrentTime(0);
+      setProgress(0);
+      setDuration(0);
+    }
   }, [song]);
+  
+  const handleTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (audio) {
+        setCurrentTime(audio.currentTime);
+        setProgress((audio.currentTime / audio.duration) * 100);
+        if (audio.currentTime === audio.duration) {
+          onSkip('forward');
+        }
+    }
+  };
+  
+  const handleLoadedMetadata = () => {
+    const audio = audioRef.current;
+    if (audio) {
+        setDuration(audio.duration);
+    }
+  };
+
+  const handleProgressChange = (value: number[]) => {
+    const audio = audioRef.current;
+    if (audio) {
+      const newTime = (value[0] / 100) * audio.duration;
+      audio.currentTime = newTime;
+      setCurrentTime(newTime);
+      setProgress(value[0]);
+    }
+  };
+
 
   return (
     <footer className="sticky bottom-0 z-10 w-full border-t bg-card/95 backdrop-blur-sm">
+      <audio
+        ref={audioRef}
+        src={song?.fileUrl}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+      />
       <div className="container mx-auto grid h-24 grid-cols-3 items-center p-4">
         <div className="flex items-center gap-4">
           {song ? (
@@ -83,16 +134,16 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
             </Button>
           </div>
           <div className="hidden w-full max-w-xs items-center gap-2 text-xs lg:flex">
-             <span>{song ? '1:12' : '0:00'}</span>
+             <span>{formatTime(currentTime)}</span>
              <Slider
                 value={[progress]}
-                onValueChange={(value) => setProgress(value[0])}
+                onValueChange={handleProgressChange}
                 max={100}
                 step={1}
                 className="w-full"
                 disabled={!song}
               />
-             <span>{song ? '4:02' : '0:00'}</span>
+             <span>{formatTime(duration)}</span>
           </div>
         </div>
 

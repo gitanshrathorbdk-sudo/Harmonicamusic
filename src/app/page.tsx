@@ -14,6 +14,17 @@ export default function Home() {
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
 
+  React.useEffect(() => {
+    // Clean up object URLs to avoid memory leaks
+    return () => {
+      songs.forEach(song => {
+        if (song.fileUrl) {
+          URL.revokeObjectURL(song.fileUrl);
+        }
+      });
+    };
+  }, [songs]);
+
   const handleSongsAdded = (newSongs: Song[]) => {
     const allSongs = [...songs, ...newSongs];
     setSongs(allSongs);
@@ -23,8 +34,12 @@ export default function Home() {
   };
 
   const handlePlaySong = (song: Song) => {
-    setCurrentSong(song);
-    setIsPlaying(true);
+    if (currentSong?.fileUrl === song.fileUrl) {
+        handlePlayPause();
+    } else {
+        setCurrentSong(song);
+        setIsPlaying(true);
+    }
   };
   
   const handlePlayPause = () => {
@@ -36,8 +51,11 @@ export default function Home() {
   const handleSkip = (direction: 'forward' | 'backward') => {
     if (!currentSong || songs.length === 0) return;
 
-    const currentIndex = songs.findIndex(s => s.title === currentSong.title && s.artist === currentSong.artist);
-    if (currentIndex === -1) return;
+    const currentIndex = songs.findIndex(s => s.fileUrl === currentSong.fileUrl);
+    if (currentIndex === -1) {
+        if (songs.length > 0) setCurrentSong(songs[0]);
+        return;
+    };
 
     let nextIndex;
     if (direction === 'forward') {

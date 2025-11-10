@@ -1,6 +1,6 @@
 'use client';
 
-import { Music, Play, Upload } from 'lucide-react';
+import { Music, Play, Pause, Upload } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';

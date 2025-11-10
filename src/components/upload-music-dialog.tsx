@@ -71,6 +71,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
         artist: s.artist,
         genre: s.genre || '',
         mood: s.mood || '',
+        fileUrl: URL.createObjectURL(s.file[0]),
     }));
 
     onSongsAdded(newSongs);

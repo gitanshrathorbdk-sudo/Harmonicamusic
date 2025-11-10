@@ -3,6 +3,7 @@ export type Song = {
   artist: string;
   genre: string;
   mood: string;
+  fileUrl: string;
 };
 
 export type Playlist = {
