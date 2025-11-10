@@ -1,12 +1,13 @@
 'use client';
 
-import { Music, Play, Pause, Upload } from 'lucide-react';
+import { Music, Play, Upload } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import type { Song } from '@/lib/types';
 import * as React from 'react';
 import { UploadMusicDialog } from './upload-music-dialog';
+import { Badge } from './ui/badge';
 
 interface YourMusicProps {
   songs: Song[];
@@ -29,8 +30,7 @@ export function YourMusic({ songs, onPlaySong, onSongsAdded }: YourMusicProps) {
                   <TableHead className='w-12'></TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead className="hidden md:table-cell">Artist</TableHead>
-                  <TableHead className="hidden lg:table-cell">Genre</TableHead>
-                  <TableHead className="hidden lg:table-cell">Mood</TableHead>
+                  <TableHead className="hidden lg:table-cell">Characteristics</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -59,8 +59,11 @@ export function YourMusic({ songs, onPlaySong, onSongsAdded }: YourMusicProps) {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{song.artist}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{song.genre}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{song.mood}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {song.characteristics?.map(char => <Badge key={char} variant="secondary">{char}</Badge>)}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
