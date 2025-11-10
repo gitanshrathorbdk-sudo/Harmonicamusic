@@ -51,21 +51,40 @@ Vercel is a platform for hosting web applications that has a generous free tier 
 
 1.  **Sign up for Vercel**: Create a free account at [vercel.com](https://vercel.com/signup). It's easiest to sign up with a GitHub, GitLab, or Bitbucket account.
 
-2.  **Push Code to a Git Repository**:
-    *   Create a new repository on [GitHub](https://github.com/new).
-    *   In your local project folder, initialize a git repository and push your code:
+2.  **Push Code to a Git Repository**: Vercel needs a Git repository URL to import your project. You'll need to upload your code to a service like GitHub first.
+
+    *   **A. Create a GitHub Account**: If you don't have one, sign up for a free account at [github.com](https://github.com).
+
+    *   **B. Create a New Repository on GitHub**:
+        *   Go to [github.com/new](https://github.com/new).
+        *   Give your repository a name (e.g., `harmonica-music-app`).
+        *   You can keep it public.
+        *   Don't initialize it with a README or .gitignore file, since your project already has these.
+        *   Click **"Create repository"**.
+
+    *   **C. Upload Your Code**:
+        *   Open a terminal or command prompt on your computer and navigate to your project's folder.
+        *   Initialize a new Git repository locally and push your code using the commands GitHub provides on the next page. They will look like this:
         ```bash
+        # Initialize your local folder as a Git repository
         git init
         git add .
         git commit -m "Initial commit"
+
+        # Rename the default branch to 'main'
         git branch -M main
+
+        # Connect your local repository to the one on GitHub
+        # Replace YOUR_USERNAME and YOUR_REPO_NAME with your actual details
         git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+
+        # Push your code to GitHub
         git push -u origin main
         ```
 
 3.  **Import Project in Vercel**:
-    *   On your Vercel dashboard, click **"Add New... > Project"**.
-    *   Select the Git repository you just created.
+    *   Now, on your Vercel dashboard, click **"Add New... > Project"**.
+    *   Select the Git repository you just created on GitHub. Vercel will ask for permission to access your GitHub account if it's the first time.
     *   Vercel will automatically detect that it's a Next.js project. You don't need to change any settings.
 
 4.  **Add Environment Variable (Optional for AI)**:
