@@ -39,13 +39,16 @@ export function YourMusic({ songs, onPlaySong }: YourMusicProps) {
               </TableHeader>
               <TableBody>
                 {songs.map((song, index) => (
-                  <TableRow key={index} className="group">
+                  <TableRow key={index} className="group cursor-pointer" onClick={() => onPlaySong(song)}>
                     <TableCell>
                         <Button
                             variant="ghost"
                             size="icon"
                             className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => onPlaySong(song)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPlaySong(song);
+                            }}
                         >
                             <Play className="h-5 w-5 fill-current" />
                         </Button>
