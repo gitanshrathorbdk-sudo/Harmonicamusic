@@ -76,22 +76,32 @@ export function CreatePlaylistDialog({
   const [isGenerating, setIsGenerating] = React.useState(false);
 
   const { toast } = useToast();
+  
+  const manualDefaultValues = React.useMemo(() => ({
+    playlistName: '',
+  }), []);
 
   const manualForm = useForm<z.infer<typeof manualPlaylistFormSchema>>({
     resolver: zodResolver(manualPlaylistFormSchema),
-    defaultValues: {
-      playlistName: '',
-    },
+    defaultValues: manualDefaultValues,
   });
+
+  const aiDefaultValues = React.useMemo(() => ({
+    playlistName: '',
+    prompt: '',
+    songCount: 10,
+  }), []);
 
   const aiForm = useForm<z.infer<typeof aiPlaylistFormSchema>>({
     resolver: zodResolver(aiPlaylistFormSchema),
-    defaultValues: {
-      playlistName: '',
-      prompt: '',
-      songCount: 10,
-    },
+    defaultValues: aiDefaultValues,
   });
+
+  React.useEffect(() => {
+    manualForm.reset(manualDefaultValues);
+    aiForm.reset(aiDefaultValues);
+  }, [open, manualDefaultValues, aiDefaultValues, manualForm, aiForm]);
+
 
   const handleSaveManualPlaylist = (
     values: z.infer<typeof manualPlaylistFormSchema>
@@ -169,8 +179,6 @@ export function CreatePlaylistDialog({
     if (!isOpen) {
       setTimeout(() => {
         setSelectedSongs(new Set());
-        manualForm.reset();
-        aiForm.reset();
       }, 300);
     }
   };
