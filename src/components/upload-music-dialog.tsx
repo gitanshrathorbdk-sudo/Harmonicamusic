@@ -30,6 +30,7 @@ import { Textarea } from './ui/textarea';
 import { suggestCharacteristics } from '@/ai/flows/suggest-characteristics-flow';
 import { db } from '@/lib/db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { getYouTubeSong } from '@/app/actions';
 
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -153,19 +154,60 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   async function onYoutubeSubmit(values: z.infer<typeof youtubeImportSchema>) {
     setIsImporting(true);
     toast({
-        title: "Importing...",
-        description: "Please wait while the song is being imported from YouTube."
-    })
-    // NOTE: Server action to be implemented in the next step.
-    console.log('YouTube URL submitted:', values.url);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Placeholder for server action
-    
-    toast({
-        title: "Feature in Progress",
-        description: "The server-side logic for YouTube imports is next!"
+        title: "Importing from YouTube...",
+        description: "This may take a moment. Please wait."
     });
-    setIsImporting(false);
-    onOpenChange(false);
+
+    try {
+        const result = await getYouTubeSong(values.url);
+
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
+        // Convert base64 back to a blob/file
+        const byteCharacters = atob(result.audioBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: result.mimeType });
+        const file = new File([blob], `${result.title}.mp3`, { type: result.mimeType });
+
+        const songToSave = {
+            title: result.title,
+            artist: result.artist,
+            characteristics: ['youtube', 'import'],
+            file: file,
+        };
+        
+        const addedId = await db.songs.add(songToSave);
+        
+        const newSong: Song = {
+            ...songToSave,
+            id: addedId as number,
+            fileUrl: URL.createObjectURL(file),
+        };
+        
+        onSongsAdded([newSong]);
+
+        toast({
+            title: "Song Imported!",
+            description: `"${result.title}" has been added to your library.`
+        });
+        onOpenChange(false);
+
+    } catch (error: any) {
+        console.error("YouTube import failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Import Failed",
+            description: error.message || "Could not import the song from YouTube."
+        });
+    } finally {
+        setIsImporting(false);
+    }
   }
   
   React.useEffect(() => {
