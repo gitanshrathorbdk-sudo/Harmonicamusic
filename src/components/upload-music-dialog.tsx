@@ -161,8 +161,15 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     try {
         const result = await getYouTubeSong(values.url);
 
-        if (!result.success) {
-            throw new Error(result.error);
+        if (!result.success || !result.audioBase64 || !result.mimeType) {
+            // Instead of throwing an error, show a toast.
+            toast({
+                variant: "destructive",
+                title: "Import Failed",
+                description: result.error || "Could not import the song from YouTube."
+            });
+            setIsImporting(false);
+            return;
         }
 
         // Convert base64 back to a blob/file
@@ -203,7 +210,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
         toast({
             variant: "destructive",
             title: "Import Failed",
-            description: error.message || "Could not import the song from YouTube."
+            description: error.message || "An unexpected error occurred during import."
         });
     } finally {
         setIsImporting(false);
