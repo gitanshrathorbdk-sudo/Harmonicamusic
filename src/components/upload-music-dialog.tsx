@@ -23,15 +23,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Wand2, Loader2, Youtube } from 'lucide-react';
+import { Plus, Trash2, Wand2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Song } from '@/lib/types';
 import { Textarea } from './ui/textarea';
 import { suggestCharacteristics } from '@/ai/flows/suggest-characteristics-flow';
 import { db } from '@/lib/db';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Label } from './ui/label';
-import { getYouTubeSong } from '@/app/actions';
 
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -66,9 +63,6 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   const { toast } = useToast();
   const [generatingIndex, setGeneratingIndex] = React.useState<number | null>(null);
   
-  const [youtubeUrl, setYoutubeUrl] = React.useState('');
-  const [isImporting, setIsImporting] = React.useState(false);
-
   const form = useForm<z.infer<typeof uploadFormSchema>>({
     resolver: zodResolver(uploadFormSchema),
     defaultValues: {
@@ -109,7 +103,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   }
 
 
-  async function onDeviceSubmit(values: z.infer<typeof uploadFormSchema>) {
+  async function onSubmit(values: z.infer<typeof uploadFormSchema>) {
     try {
       const songsToSave = values.songs.map(s => ({
         title: s.title,
@@ -142,216 +136,134 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
       });
     }
   }
-
-  const handleYoutubeImport = async () => {
-    setIsImporting(true);
-    toast({
-        title: 'Importing song...',
-        description: 'Downloading audio from YouTube. This may take a moment.',
-    });
-
-    try {
-        const result = await getYouTubeSong(youtubeUrl);
-        
-        // Convert base64 back to a blob/file
-        const audioBlob = await fetch(`data:audio/mp3;base64,${result.audioBase64}`).then(res => res.blob());
-        const audioFile = new File([audioBlob], `${result.title}.mp3`, { type: 'audio/mp3' });
-        
-        const songToSave = {
-            title: result.title,
-            artist: result.artist,
-            characteristics: [], // Characteristics can be generated later
-            file: audioFile,
-        };
-        
-        const addedId = await db.songs.add(songToSave);
-        const newSong: Song = {
-            ...songToSave,
-            id: addedId as number,
-            fileUrl: URL.createObjectURL(audioFile),
-        };
-
-        onSongsAdded([newSong]);
-
-        toast({
-            title: 'Song Imported!',
-            description: `"${result.title}" has been added to your library.`,
-        });
-        onOpenChange(false);
-
-    } catch (error: any) {
-        console.error("YouTube import failed", error);
-        toast({
-            variant: 'destructive',
-            title: 'Import Failed',
-            description: error.message || 'Could not import the song. Please check the URL and try again.',
-        });
-    } finally {
-        setIsImporting(false);
-    }
-  };
   
   React.useEffect(() => {
     if (!open) {
       form.reset({
         songs: [{ title: '', artist: '', characteristics: '', file: undefined }],
       });
-      setYoutubeUrl('');
     }
   }, [open, form]);
 
   const content = (
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add Music</DialogTitle>
+          <DialogTitle>Add Music From Device</DialogTitle>
           <DialogDescription>
-            Add songs to your Harmonica library from your device or a YouTube link.
+            Add songs to your Harmonica library from your computer.
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="device" className="w-full pt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="device">
-              From Device
-            </TabsTrigger>
-            <TabsTrigger value="youtube">
-              <Youtube className="mr-2 h-4 w-4" />
-              From YouTube
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="device">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onDeviceSubmit)} className="space-y-6 pt-4">
-                <div className="space-y-4 pr-2 max-h-[50vh] overflow-y-auto">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="space-y-4 rounded-lg border p-4 relative">
-                      <h4 className="font-medium text-lg">Song #{index + 1}</h4>
-                       <FormField
-                          control={form.control}
-                          name={`songs.${index}.file`}
-                          render={({ field: { onChange, value, ...rest }}) => (
-                            <FormItem>
-                              <FormLabel>Music File</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="file" 
-                                  accept="audio/*"
-                                  onChange={(e) => onChange(e.target.files)}
-                                  {...rest}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                       <div className="grid grid-cols-2 gap-4">
-                         <FormField
-                            control={form.control}
-                            name={`songs.${index}.title`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Title</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Song Title" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`songs.${index}.artist`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Artist</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Artist Name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                       </div>
-                       <FormField
-                          control={form.control}
-                          name={`songs.${index}.characteristics`}
-                          render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="flex items-center justify-between">
-                                    <span>Characteristics (Optional)</span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleGenerateCharacteristics(index)}
-                                        disabled={generatingIndex === index}
-                                    >
-                                        {generatingIndex === index ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Wand2 className="mr-2 h-4 w-4" />
-                                        )}
-                                        Generate with AI
-                                    </Button>
-                                </FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                        placeholder="e.g. upbeat, indie, summer"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                       {fields.length > 1 && (
-                         <Button
-                           type="button"
-                           variant="destructive"
-                           size="icon"
-                           className="absolute top-2 right-2 h-7 w-7"
-                           onClick={() => remove(index)}
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       )}
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => append({ title: '', artist: '', characteristics: '', file: undefined })}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Another Song
-                </Button>
-                <DialogFooter>
-                  <Button type="submit">Add to Library</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </TabsContent>
-          <TabsContent value="youtube">
-            <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                    <Label htmlFor="youtube-url">YouTube Video URL</Label>
-                    <Input
-                        id="youtube-url"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        value={youtubeUrl}
-                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                        disabled={isImporting}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+            <div className="space-y-4 pr-2 max-h-[50vh] overflow-y-auto">
+              {fields.map((field, index) => (
+                <div key={field.id} className="space-y-4 rounded-lg border p-4 relative">
+                  <h4 className="font-medium text-lg">Song #{index + 1}</h4>
+                   <FormField
+                      control={form.control}
+                      name={`songs.${index}.file`}
+                      render={({ field: { onChange, value, ...rest }}) => (
+                        <FormItem>
+                          <FormLabel>Music File</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="file" 
+                              accept="audio/*"
+                              onChange={(e) => onChange(e.target.files)}
+                              {...rest}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
+                   <div className="grid grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name={`songs.${index}.title`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Song Title" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`songs.${index}.artist`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Artist</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Artist Name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                   </div>
+                   <FormField
+                      control={form.control}
+                      name={`songs.${index}.characteristics`}
+                      render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center justify-between">
+                                <span>Characteristics (Optional)</span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleGenerateCharacteristics(index)}
+                                    disabled={generatingIndex === index}
+                                >
+                                    {generatingIndex === index ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Wand2 className="mr-2 h-4 w-4" />
+                                    )}
+                                    Generate with AI
+                                </Button>
+                            </FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="e.g. upbeat, indie, summer"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                   {fields.length > 1 && (
+                     <Button
+                       type="button"
+                       variant="destructive"
+                       size="icon"
+                       className="absolute top-2 right-2 h-7 w-7"
+                       onClick={() => remove(index)}
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   )}
                 </div>
-                 <DialogFooter>
-                    <Button onClick={handleYoutubeImport} disabled={isImporting || !youtubeUrl}>
-                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Youtube className="mr-2 h-4 w-4" />}
-                        Import Song
-                    </Button>
-                 </DialogFooter>
+              ))}
             </div>
-          </TabsContent>
-        </Tabs>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => append({ title: '', artist: '', characteristics: '', file: undefined })}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Another Song
+            </Button>
+            <DialogFooter>
+              <Button type="submit">Add to Library</Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
   );
 
