@@ -161,15 +161,8 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     try {
         const result = await getYouTubeSong(values.url);
 
-        if (!result.success || !result.audioBase64 || !result.mimeType) {
-            // Instead of throwing an error, show a toast.
-            toast({
-                variant: "destructive",
-                title: "Import Failed",
-                description: result.error || "Could not import the song from YouTube."
-            });
-            setIsImporting(false);
-            return;
+        if (!result || !result.audioBase64 || !result.mimeType) {
+            throw new Error("Could not retrieve song data from YouTube.");
         }
 
         // Convert base64 back to a blob/file
