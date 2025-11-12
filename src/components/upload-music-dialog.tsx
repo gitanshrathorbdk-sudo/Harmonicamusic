@@ -31,6 +31,7 @@ import { suggestCharacteristics } from '@/ai/flows/suggest-characteristics-flow'
 import { db } from '@/lib/db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Label } from './ui/label';
+import { getYouTubeSong } from '@/app/actions';
 
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -143,11 +144,51 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   }
 
   const handleYoutubeImport = async () => {
-    // Logic will be added in the next step
+    setIsImporting(true);
     toast({
-        title: "Feature in progress",
-        description: "YouTube import functionality is coming soon!",
+        title: 'Importing song...',
+        description: 'Downloading audio from YouTube. This may take a moment.',
     });
+
+    try {
+        const result = await getYouTubeSong(youtubeUrl);
+        
+        // Convert base64 back to a blob/file
+        const audioBlob = await fetch(`data:audio/mp3;base64,${result.audioBase64}`).then(res => res.blob());
+        const audioFile = new File([audioBlob], `${result.title}.mp3`, { type: 'audio/mp3' });
+        
+        const songToSave = {
+            title: result.title,
+            artist: result.artist,
+            characteristics: [], // Characteristics can be generated later
+            file: audioFile,
+        };
+        
+        const addedId = await db.songs.add(songToSave);
+        const newSong: Song = {
+            ...songToSave,
+            id: addedId as number,
+            fileUrl: URL.createObjectURL(audioFile),
+        };
+
+        onSongsAdded([newSong]);
+
+        toast({
+            title: 'Song Imported!',
+            description: `"${result.title}" has been added to your library.`,
+        });
+        onOpenChange(false);
+
+    } catch (error: any) {
+        console.error("YouTube import failed", error);
+        toast({
+            variant: 'destructive',
+            title: 'Import Failed',
+            description: error.message || 'Could not import the song. Please check the URL and try again.',
+        });
+    } finally {
+        setIsImporting(false);
+    }
   };
   
   React.useEffect(() => {
