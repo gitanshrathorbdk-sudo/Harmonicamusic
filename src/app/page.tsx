@@ -7,6 +7,7 @@ import { YourMusic } from '@/components/your-music';
 import { DashboardStats } from '@/components/dashboard-stats';
 import type { Song, Playlist } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
+import { db } from '@/lib/db';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
@@ -15,6 +16,25 @@ export default function Home() {
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
+  const [isDbLoading, setIsDbLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function loadSongsFromDb() {
+      try {
+        const dbSongs = await db.songs.toArray();
+        const songsWithUrls = dbSongs.map(s => ({
+          ...s,
+          fileUrl: URL.createObjectURL(s.file)
+        }));
+        setSongs(songsWithUrls);
+      } catch (e) {
+        console.error("Failed to load songs from database", e);
+      } finally {
+        setIsDbLoading(false);
+      }
+    }
+    loadSongsFromDb();
+  }, []);
 
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -53,7 +73,7 @@ export default function Home() {
   };
 
   const handlePlaySong = (song: Song) => {
-    if (currentSong?.fileUrl === song.fileUrl) {
+    if (currentSong?.id === song.id) {
         handlePlayPause();
     } else {
         setCurrentSong(song);
@@ -70,7 +90,7 @@ export default function Home() {
   const handleSkip = (direction: 'forward' | 'backward') => {
     if (!currentSong || songs.length === 0) return;
 
-    const currentIndex = songs.findIndex(s => s.fileUrl === currentSong.fileUrl);
+    const currentIndex = songs.findIndex(s => s.id === currentSong.id);
     if (currentIndex === -1) {
         if (songs.length > 0) setCurrentSong(songs[0]);
         return;
@@ -96,7 +116,7 @@ export default function Home() {
       />
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
-          <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} />
+          <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} isLoading={isDbLoading} />
           <DashboardStats 
             playlists={playlists} 
             onPlaylistCreated={handlePlaylistCreated} 

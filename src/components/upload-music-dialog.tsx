@@ -28,13 +28,14 @@ import { useToast } from '@/hooks/use-toast';
 import type { Song } from '@/lib/types';
 import { Textarea } from './ui/textarea';
 import { suggestCharacteristics } from '@/ai/flows/suggest-characteristics-flow';
+import { db } from '@/lib/db';
 
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   artist: z.string().min(1, 'Artist is required'),
   characteristics: z.string().optional(),
   file: z
-    .any()
+    .instanceof(FileList)
     .refine((files) => files?.length == 1, 'File is required.'),
 });
 
@@ -93,23 +94,39 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   }
 
 
-  function onSubmit(values: z.infer<typeof uploadFormSchema>) {
-    console.log(values);
-    
-    const newSongs: Song[] = values.songs.map(s => ({
+  async function onSubmit(values: z.infer<typeof uploadFormSchema>) {
+    try {
+      const songsToSave = values.songs.map(s => ({
         title: s.title,
         artist: s.artist,
-        characteristics: s.characteristics ? s.characteristics.split(',').map(c => c.trim()).filter(c => c) : [],
-        fileUrl: URL.createObjectURL(s.file[0]),
-    }));
+        characteristics: s.characteristics ? s.characteristics.split(',').map(c => c.trim()).filter(Boolean) : [],
+        file: s.file[0],
+      }));
 
-    onSongsAdded(newSongs);
+      // Dexie's bulkAdd returns the generated keys
+      const addedIds = await db.songs.bulkAdd(songsToSave, { allKeys: true });
 
-    toast({
-      title: 'Music Added',
-      description: `${values.songs.length} song(s) have been added to your library.`,
-    });
-    onOpenChange(false);
+      const newSongs: Song[] = songsToSave.map((s, i) => ({
+          ...s,
+          id: addedIds[i] as number,
+          fileUrl: URL.createObjectURL(s.file),
+      }));
+
+      onSongsAdded(newSongs);
+
+      toast({
+        title: 'Music Added',
+        description: `${values.songs.length} song(s) have been added to your library.`,
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to save songs to database", error);
+      toast({
+        variant: 'destructive',
+        title: 'Database Error',
+        description: 'Could not save the songs. Please try again.',
+      });
+    }
   }
   
   React.useEffect(() => {

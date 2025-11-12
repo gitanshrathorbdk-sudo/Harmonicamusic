@@ -70,7 +70,7 @@ export function CreatePlaylistDialog({
   songs,
 }: CreatePlaylistDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [selectedSongs, setSelectedSongs] = React.useState<Set<string>>(
+  const [selectedSongs, setSelectedSongs] = React.useState<Set<number>>(
     new Set()
   );
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -104,7 +104,7 @@ export function CreatePlaylistDialog({
       });
       return;
     }
-    const songsForPlaylist = songs.filter((s) => selectedSongs.has(s.fileUrl));
+    const songsForPlaylist = songs.filter((s) => s.id && selectedSongs.has(s.id));
 
     const playlist: Playlist = {
       name: values.playlistName,
@@ -176,12 +176,12 @@ export function CreatePlaylistDialog({
     }
   };
 
-  const handleSongSelection = (songFileUrl: string) => {
+  const handleSongSelection = (songId: number) => {
     const newSelection = new Set(selectedSongs);
-    if (newSelection.has(songFileUrl)) {
-      newSelection.delete(songFileUrl);
+    if (newSelection.has(songId)) {
+      newSelection.delete(songId);
     } else {
-      newSelection.add(songFileUrl);
+      newSelection.add(songId);
     }
     setSelectedSongs(newSelection);
   };
@@ -238,10 +238,11 @@ export function CreatePlaylistDialog({
                   <div className="space-y-2">
                     {songs.length > 0 ? (
                       songs.map((song) => (
+                        song.id ? (
                         <div
-                          key={song.fileUrl}
+                          key={song.id}
                           className="flex items-center justify-between rounded-md p-2 hover:bg-accent/50 cursor-pointer"
-                          onClick={() => handleSongSelection(song.fileUrl)}
+                          onClick={() => handleSongSelection(song.id!)}
                         >
                           <div className="flex items-center gap-3">
                             <Music className="h-5 w-5 text-muted-foreground" />
@@ -253,13 +254,14 @@ export function CreatePlaylistDialog({
                             </div>
                           </div>
                           <Checkbox
-                            id={`song-${song.fileUrl}`}
-                            checked={selectedSongs.has(song.fileUrl)}
+                            id={`song-${song.id}`}
+                            checked={selectedSongs.has(song.id)}
                             onCheckedChange={() =>
-                              handleSongSelection(song.fileUrl)
+                              handleSongSelection(song.id!)
                             }
                           />
                         </div>
+                        ) : null
                       ))
                     ) : (
                       <p className="py-8 text-center text-muted-foreground">

@@ -37,7 +37,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
     } else {
       audio.pause();
     }
-  }, [isPlaying, song?.fileUrl]); // Depend on song.fileUrl to correctly handle song changes
+  }, [isPlaying, song?.id]); // Depend on song.id to correctly handle song changes
 
   // This effect resets progress when the song changes
   React.useEffect(() => {
@@ -51,7 +51,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
         audio.play().catch(e => console.error("Playback failed for new song", e));
       }
     }
-  }, [song?.fileUrl, isPlaying]);
+  }, [song?.id, isPlaying]);
   
   const handleTimeUpdate = () => {
     const audio = audioRef.current;
