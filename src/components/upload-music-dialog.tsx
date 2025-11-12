@@ -161,10 +161,6 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     try {
         const result = await getYouTubeSong(values.url);
 
-        if (!result || !result.audioBase64 || !result.mimeType) {
-            throw new Error("Could not retrieve song data from YouTube.");
-        }
-
         // Convert base64 back to a blob/file
         const byteCharacters = atob(result.audioBase64);
         const byteNumbers = new Array(byteCharacters.length);
