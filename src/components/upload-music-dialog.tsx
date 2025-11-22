@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
+import { useActionState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useFormState } from 'react-dom';
 
 import {
   Dialog,
@@ -93,7 +93,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   });
 
   const youtubeFormRef = React.useRef<HTMLFormElement>(null);
-  const [ytActionState, formAction] = useFormState(getYouTubeSong, null);
+  const [ytActionState, formAction] = useActionState(getYouTubeSong, null);
 
   const youtubeSongForm = useForm<z.infer<typeof youtubeSongSchema>>({
     resolver: zodResolver(youtubeSongSchema),
@@ -262,7 +262,9 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
       });
       youtubeSongForm.reset();
       // This is a way to reset the form state for useFormState
-      youtubeFormRef.current?.reset();
+      if (youtubeFormRef.current) {
+        (youtubeFormRef.current as any).reset();
+      }
     }
   }, [open, fileUploadForm, youtubeSongForm]);
   
