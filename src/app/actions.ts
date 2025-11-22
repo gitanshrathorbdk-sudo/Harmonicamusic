@@ -5,7 +5,12 @@ import { z } from 'zod';
 const YOUTUBE_API_ENDPOINT = 'https://yt1s.com/api/ajaxSearch/index';
 
 const youtubeActionSchema = z.object({
-  url: z.string().url('Please enter a valid YouTube URL.'),
+  url: z.string().refine(
+    (url) => url.includes('youtube.com') || url.includes('youtu.be'),
+    {
+      message: 'Please enter a valid YouTube URL.',
+    }
+  ),
 });
 
 type ActionState = {
